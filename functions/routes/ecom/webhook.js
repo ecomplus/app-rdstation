@@ -70,7 +70,7 @@ exports.post = ({ appSdk }, req, res) => {
                 let data
                 if (resource === 'orders') {
                   const financial = body && body.financial_status.current
-                  const totalItems = body.items.length
+                  
                   const transaction = body.transactions[0]
                   const getMethod = transaction => {
                     const paymentMethod = transaction.payment_method && transaction.payment_method.code
@@ -104,12 +104,31 @@ exports.post = ({ appSdk }, req, res) => {
                     }
                   }
                 } else if (resource === 'carts') {
-
+                  const totalItems = body.items.length
+                  const acceptedMarketing = body.accepts_marketing ? 'granted' : 'declined'
+                  data = {
+                    "event_type": "CART_ABANDONED",
+                    "event_family":"CDP",
+                    "payload": {
+                      "name": customer.display_name,
+                      "email": customer.main_email,
+                      "cf_cart_id": body._id,
+                      "cf_cart_total_items": totalItems,
+                      "cf_cart_status": "in_progress",
+                      "legal_bases": [
+                        {
+                          "category": "communications",
+                          "type": "consent",
+                          "status": acceptedMarketing
+                        }
+                      ]
+                    }
+                  }
                 }
                 return axios({
                   method: 'post',
                   url,
-                  data: data
+                  data
                 })
               })
               .then(({ status }) => console.log(`> ${status}`))
