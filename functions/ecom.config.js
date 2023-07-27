@@ -138,12 +138,21 @@ const app = {
   },
 
   admin_settings: {
-    rd_token: {
+    client_id: {
       schema: {
         type: 'string',
-        maxLength: 255,
-        title: 'Token da RD Station',
-        description: 'Token da sua conta disponível no painel da RD'
+        maxLength: 64,
+        title: 'Client id',
+        description: 'Client id gerado ao criar aplicativo'
+      },
+      hide: true
+    },
+    client_secret: {
+      schema: {
+        type: 'string',
+        maxLength: 64,
+        title: 'Client secret',
+        description: 'Client secret gerado ao criar aplicativo'
       },
       hide: true
     }
