@@ -1,5 +1,4 @@
 const getAppData = require('./../../lib/store-api/get-app-data')
-const PagaLeveAxios = require('./../../lib/pagaleve/create-access')
 
 const findOrderById = (appSdk, storeId, auth, orderId) => {
   return new Promise((resolve, reject) => {
@@ -89,7 +88,6 @@ exports.post = ({ appSdk, admin }, req, res) => {
             if (state.toLowerCase() === 'authorized') {
               getAppData({ appSdk, storeId, auth })
                 .then(appData => {
-                  const pagaleveAxios = new PagaLeveAxios(appData.username, appData.password, true, storeId)
                   pagaleveAxios.preparing
                     .then(() => {
                       const { axios } = pagaleveAxios
