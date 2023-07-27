@@ -1,4 +1,5 @@
 const getAppData = require('./../../lib/store-api/get-app-data')
+const RdAxios = require('./../../lib/rd-stations/create-access')
 
 const findOrderById = (appSdk, storeId, auth, orderId) => {
   return new Promise((resolve, reject) => {
@@ -88,9 +89,10 @@ exports.post = ({ appSdk, admin }, req, res) => {
             if (state.toLowerCase() === 'authorized') {
               getAppData({ appSdk, storeId, auth })
                 .then(appData => {
-                  pagaleveAxios.preparing
+                  const rdAxios = RdAxios(appData.client_id, appData.client_secret, false, storeId)
+                  rdAxios.preparing
                     .then(() => {
-                      const { axios } = pagaleveAxios
+                      const { axios } = rdAxios
                       let body = {
                         checkout_id: id,
                         currency: 'BRL',
