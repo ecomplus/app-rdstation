@@ -118,7 +118,7 @@ exports.get = ({ appSdk, admin }, req, res) => {
   const { body, query } = req
   let { storeId, code } = query
   storeId = parseInt(storeId, 10)
-  console.log('>> Store: ', storeId, ' body: ', JSON.stringify(body), ' <<')
+  console.log('>> Store: ', storeId, ' code: ', code, ' <<')
   if (storeId > 100) {
     res.status(200).redirect('https://app.e-com.plus/#/apps/edit/111968/')
   }
