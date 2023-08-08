@@ -113,7 +113,7 @@ exports.post = ({ appSdk, admin }, req, res) => {
   }
 }
 
-exports.get = ({ appSdk, admin }, req, res) => {
+/* exports.get = ({ appSdk, admin }, req, res) => {
   console.log('>>Webhook RD: GET')
   const { body, query } = req
   let { storeId, code } = query
@@ -122,4 +122,4 @@ exports.get = ({ appSdk, admin }, req, res) => {
   if (storeId > 100) {
     //res.status(200).redirect('https://app.e-com.plus/#/apps/edit/111968/')
   }
-}
+} */
