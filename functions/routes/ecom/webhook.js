@@ -16,10 +16,9 @@ exports.post = ({ appSdk }, req, res) => {
    * Ref.: https://developers.e-com.plus/docs/api/#/store/triggers/
    */
   const trigger = req.body
-
+  console.log('Trigger from: ', storeId, JSON.stringify(trigger))
   // get app configured options
   getAppData({ appSdk, storeId })
-
     .then(appData => {
       if (
         Array.isArray(appData.ignore_triggers) &&
@@ -32,6 +31,8 @@ exports.post = ({ appSdk }, req, res) => {
       }
       const { client_id, client_secret, code } = appData
 
+      console.log('Get app data', client_id, client_secret, code)
+
       if (!client_id && !client_secret) {
         return res.status(409).send({
           error: 'NO_RD_KEYS',
@@ -43,6 +44,7 @@ exports.post = ({ appSdk }, req, res) => {
 
       /* DO YOUR CUSTOM STUFF HERE */
       const { resource } = trigger
+      console.log('o recurso é:', resource)
       if ((resource === 'orders' || resource === 'carts') && trigger.action !== 'delete') {
         const resourceId = trigger.resource_id || trigger.inserted_id
         if (resourceId) {
@@ -178,6 +180,7 @@ exports.post = ({ appSdk }, req, res) => {
     })
 
     .catch(err => {
+      console.log('erro para buscar o app')
       if (err.name === SKIP_TRIGGER_NAME) {
         // trigger ignored by app configuration
         res.send(ECHO_SKIP)
