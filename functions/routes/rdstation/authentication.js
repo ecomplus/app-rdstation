@@ -120,6 +120,6 @@ exports.get = ({ appSdk, admin }, req, res) => {
   storeId = parseInt(storeId, 10)
   console.log('>> Store: ', storeId, ' code: ', code, ' <<')
   if (storeId > 100) {
-    res.status(200).redirect('https://app.e-com.plus/#/apps/edit/111968/')
+    //res.status(200).redirect('https://app.e-com.plus/#/apps/edit/111968/')
   }
 }
