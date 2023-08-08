@@ -39,7 +39,7 @@ exports.post = ({ appSdk }, req, res) => {
         })
       }
 
-      const rdAxios = new RdAxios(client_id, client_secret, code, isSandbox, storeId)
+      const rdAxios = new RdAxios(client_id, client_secret, code, false, storeId)
 
       /* DO YOUR CUSTOM STUFF HERE */
       const { resource } = trigger
