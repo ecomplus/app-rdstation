@@ -1,11 +1,9 @@
-const Axios = require('./create-axios')
+const createAxios = require('./create-axios')
 const auth = require('./create-auth')
-// typeScope ===  card, if scope card_tokenization
-// typeScope === transaction, if scope for transaction
 
 const firestoreColl = 'rd_tokens'
-
-const AxiosOrToken = (resolve, reject, clienId, clientSecret, code, isSandbox, storeId, self) => {
+module.exports = function (clientId, clientSecret, code, storeId) {
+  const self = this
 
   let documentRef
   if (firestoreColl) {
@@ -14,56 +12,43 @@ const AxiosOrToken = (resolve, reject, clienId, clientSecret, code, isSandbox, s
       .doc(`${firestoreColl}/${storeId}`)
   }
 
-  const authenticate = (accessToken, resolve) => {
-    if (self) {
-      const axios = Axios(accessToken, isSandbox)
-      resolve(axios)
-    } else {
-      resolve(accessToken)
+  this.preparing = new Promise((resolve, reject) => {
+    const authenticate = (token) => {
+      self.axios = createAxios(token)
+      resolve(self)
     }
-  }
 
-  const handleAuth = (refreshToken, resolve) => {
-    console.log('> Rd Auth ', storeId)
-    auth(clienId, clientSecret, code, refreshToken, storeId, isSandbox)
-      .then((resp) => {
-        authenticate(resp.access_token, resolve)
-        if (documentRef) {
-          documentRef.set({ ...resp, isSandbox }).catch(console.error)
-        }
-      })
-      .catch(reject)
-  }
+    const handleAuth = (refreshToken) => {
+      console.log('> RD Auth02 ', storeId)
+      auth(clientId, clientSecret, code, storeId, refreshToken)
+        .then((data) => {
+          console.log('> RD token => ', data)
+          authenticate(data.access_token)
+          if (documentRef) {
+            documentRef.set({
+              ...data,
+              updatedAt: new Date().toISOString()
+            }).catch(console.error)
+          }
+        })
+        .catch(reject)
+    }
 
-  if (documentRef) {
-    documentRef.get()
-      .then((documentSnapshot) => {
-        const data = documentSnapshot.data() || null
-        if (documentSnapshot.exists && data && data.expires_in && new Date(data.expires_in).getTime() <= 23 * 60 * 60 * 1000) {
-          authenticate(data.access_token, resolve)
-        } else {
-          handleAuth(data.refresh_token, resolve)
-        }
-      })
-      .catch(console.error)
-  } else {
-    handleAuth(resolve)
-  }
-}
-
-const CreateAxios = (clienId, clientSecret, code, isSandbox, storeId) => {
-  return new Promise((resolve, reject) => {
-    AxiosOrToken(resolve, reject, clienId, clientSecret, code, isSandbox, storeId, this)
+    if (documentRef) {
+      documentRef.get()
+        .then((documentSnapshot) => {
+          if (documentSnapshot.exists &&
+            Date.now() - documentSnapshot.updateTime.toDate().getTime() <= 23 * 60 * 60 * 1000 // token expires in 50 min
+          ) {
+            authenticate(documentSnapshot.get('access_token'))
+          } else {
+            handleAuth(documentSnapshot.get('refresh_token'))
+          }
+        })
+        .catch(console.error)
+    } else {
+      handleAuth()
+    }
   })
 }
 
-const getToken = (clienId, clientSecret, code, isSandbox, storeId) => {
-  return new Promise((resolve, reject) => {
-    AxiosOrToken(resolve, reject, clienId, clientSecret, code, isSandbox, storeId)
-  })
-}
-
-module.exports = {
-  CreateAxios,
-  getToken
-}

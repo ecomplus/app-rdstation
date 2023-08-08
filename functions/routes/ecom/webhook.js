@@ -16,7 +16,7 @@ exports.post = ({ appSdk }, req, res) => {
    * Ref.: https://developers.e-com.plus/docs/api/#/store/triggers/
    */
   const trigger = req.body
-  console.log('Trigger from: ', storeId, JSON.stringify(trigger))
+  console.log('Trigger from: ', storeId)
   // get app configured options
   getAppData({ appSdk, storeId })
     .then(appData => {
@@ -31,7 +31,7 @@ exports.post = ({ appSdk }, req, res) => {
       }
       const { client_id, client_secret, code } = appData
 
-      console.log('Get app data', client_id, client_secret, code)
+      console.log('Get app data:', client_id, client_secret, code)
 
       if (!client_id && !client_secret) {
         return res.status(409).send({
@@ -40,7 +40,11 @@ exports.post = ({ appSdk }, req, res) => {
         })
       }
 
-      const rdAxios = new RdAxios(client_id, client_secret, code, false, storeId)
+      console.log('Before instance')
+
+      const rdAxios = new RdAxios(client_id, client_secret, code, storeId)
+
+      console.log('After instance', rdAxios)
 
       /* DO YOUR CUSTOM STUFF HERE */
       const { resource } = trigger

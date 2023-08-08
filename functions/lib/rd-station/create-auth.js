@@ -1,10 +1,9 @@
-module.exports = (client_id, client_secret, code, refresh_token, storeId, isSandbox) => new Promise((resolve, reject) => {
-  //  https://developer.fedex.com/api/en-in/catalog/authorization/docs.html#operation/API%20Authorization
-  let accessToken
-  const axios = require('./create-axios')(accessToken, isSandbox)
+module.exports = (client_id, client_secret, code, storeId, refresh_token) => new Promise((resolve, reject) => {
+  //  https://developers.rdstation.com/reference/gerar-code
+  const axios = require('./create-axios')(null)
   const request = isRetry => {
     const path = refresh_token ? '/auth/token' : `/auth/token?code=${code}`
-    console.log(`>> Create Auth s:${storeId}--Sandbox: ${isSandbox}`)
+    console.log(`>> Create Auth path:${storeId}: ${path}`)
     axios.post(path, {
       client_id,
       client_secret,
@@ -12,6 +11,8 @@ module.exports = (client_id, client_secret, code, refresh_token, storeId, isSand
     })
       .then(({ data }) => resolve(data))
       .catch(err => {
+        console.log('Deu erro', JSON.stringify(err))
+        // console.log('Deu erro quero response status', err.response.status)
         if (!isRetry && err.response && err.response.status >= 429) {
           setTimeout(() => request(true), 7000)
         }
@@ -20,3 +21,4 @@ module.exports = (client_id, client_secret, code, refresh_token, storeId, isSand
   }
   request()
 })
+
