@@ -2,7 +2,8 @@ const axios = require('axios')
 module.exports = (accessToken, isSandbox) => {
 
   const headers = {
-    'Content-Type': 'application/x-www-form-urlencoded'
+    'content-type': 'application/json',
+    accept: 'application/json'
   }
   if (accessToken) {
     console.log('> token ', accessToken)
@@ -10,7 +11,7 @@ module.exports = (accessToken, isSandbox) => {
   }
 
   return axios.create({
-    baseURL: `https://apis.${isSandbox ? 'sandbox.' : ''}fedex.com`,
+    baseURL: `https://api.rd.services`,
     headers
   })
 }

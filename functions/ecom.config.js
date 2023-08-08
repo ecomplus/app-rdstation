@@ -155,6 +155,15 @@ const app = {
         description: 'Client secret gerado ao criar aplicativo'
       },
       hide: true
+    },
+    code: {
+      schema: {
+        type: 'string',
+        maxLength: 64,
+        title: 'Código',
+        description: 'Ao instalar o aplicativo na RD station, caso não tenha sido inserido automaticamente esse campo, favor incluir a url de redirecionamento'
+      },
+      hide: true
     }
   }
 }

@@ -1,23 +1,19 @@
 const getAppData = require('./../../lib/store-api/get-app-data')
-const RdAxios = require('./../../lib/rd-stations/create-access')
+const updateAppData = require('./../../lib/store-api/update-app-data')
 
 exports.post = ({ appSdk, admin }, req, res) => {
-  console.log('>>Webhook RD: ')
+  console.log('>>Webhook RD: POST')
   const { body, query } = req
-  let { storeId } = query
+  let { storeId, code } = query
   storeId = parseInt(storeId, 10)
-  const {
-    id,
-    orderReference,
-    state,
-    amount
-  } = body
   console.log('>> Store: ', storeId, ' body: ', JSON.stringify(body), ' <<')
   if (storeId > 100) {
     res.status(200).send(body)
     return appSdk.getAuth(storeId)
       .then(async (auth) => {
         try {
+          // getAppData({ appSdk, storeId, auth }).then()
+          /* 
           const order = await findOrderById(appSdk, storeId, auth, orderReference)
           if (order) {
             // update payment
@@ -57,10 +53,9 @@ exports.post = ({ appSdk, admin }, req, res) => {
             if (state.toLowerCase() === 'authorized') {
               getAppData({ appSdk, storeId, auth })
                 .then(appData => {
-                  const rdAxios = RdAxios(appData.client_id, appData.client_secret, false, storeId)
-                  rdAxios.preparing
+                  pagaleveAxios.preparing
                     .then(() => {
-                      const { axios } = rdAxios
+                      const { axios } = pagaleveAxios
                       let body = {
                         checkout_id: id,
                         currency: 'BRL',
@@ -84,13 +79,13 @@ exports.post = ({ appSdk, admin }, req, res) => {
                 })
             }
           }
-        } catch (error) {
+         */} catch (error) {
           console.error(error)
           const { response, config } = error
           let status
           if (response) {
             status = response.status
-            const err = new Error(`#${storeId} Pagalve Webhook error ${status}`)
+            const err = new Error(`#${storeId} RD Stations Webhook error ${status}`)
             err.url = config && config.url
             err.status = status
             err.response = JSON.stringify(response.data)
@@ -99,7 +94,7 @@ exports.post = ({ appSdk, admin }, req, res) => {
           if (!res.headersSent) {
             res.send({
               status: status || 500,
-              msg: `#${storeId} Pagaleve Webhook error`
+              msg: `#${storeId} RD Webhook error`
             })
           }
         }
@@ -117,3 +112,14 @@ exports.post = ({ appSdk, admin }, req, res) => {
     })
   }
 }
+
+/* exports.get = ({ appSdk, admin }, req, res) => {
+  console.log('>>Webhook RD: GET')
+  const { body, query } = req
+  let { storeId, code } = query
+  storeId = parseInt(storeId, 10)
+  console.log('>> Store: ', storeId, ' code: ', code, ' <<')
+  if (storeId > 100) {
+    //res.status(200).redirect('https://app.e-com.plus/#/apps/edit/111968/')
+  }
+} */
