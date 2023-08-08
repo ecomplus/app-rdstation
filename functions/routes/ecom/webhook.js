@@ -1,5 +1,6 @@
 // read configured E-Com Plus app data
 const getAppData = require('./../../lib/store-api/get-app-data')
+const RdAxios = require('./../../lib/rd-station/create-access')
 
 const SKIP_TRIGGER_NAME = 'SkipTrigger'
 const ECHO_SUCCESS = 'SUCCESS'
@@ -29,13 +30,22 @@ exports.post = ({ appSdk }, req, res) => {
         err.name = SKIP_TRIGGER_NAME
         throw err
       }
+      const { client_id, client_secret, code } = appData
+
+      if (!client_id && !client_secret) {
+        return res.status(409).send({
+          error: 'NO_RD_KEYS',
+          message: 'Client id ou secret não configurado'
+        })
+      }
+
+      const rdAxios = new RdAxios(client_id, client_secret, code, isSandbox, storeId)
 
       /* DO YOUR CUSTOM STUFF HERE */
       const { resource } = trigger
       if ((resource === 'orders' || resource === 'carts') && trigger.action !== 'delete') {
         const resourceId = trigger.resource_id || trigger.inserted_id
-        if (resourceId && appData.rd_token) {
-          const url = 'https://api.rd.services/platform/events'
+        if (resourceId) {
           console.log(`Trigger for Store #${storeId} ${resourceId} => ${url}`)
           if (url) {
             appSdk.apiRequest(storeId, `${resource}/${resourceId}.json`)
@@ -125,30 +135,38 @@ exports.post = ({ appSdk }, req, res) => {
                     }
                   }
                 }
-                return axios({
-                  method: 'post',
-                  url,
-                  data
-                })
-              })
-              .then(({ status }) => console.log(`> ${status}`))
-              .catch(error => {
-                if (error.response && error.config) {
-                  const err = new Error(`#${storeId} ${resourceId} POST to ${url} failed`)
-                  const { status, data } = error.response
-                  err.response = {
-                    status,
-                    data: JSON.stringify(data)
-                  }
-                  err.data = JSON.stringify(error.config.data)
-                  return console.error(err)
-                }
-                console.error(error)
-              })
-              .finally(() => {
-                if (!res.headersSent) {
-                  return res.sendStatus(200)
-                }
+                rdAxios.preparing
+                  .then(() => {
+                    const { axios } = rdAxios
+                    console.log('> Send resource', JSON.stringify(data), ' <<')
+                    // https://axios-http.com/ptbr/docs/req_config
+                    const validateStatus = function (status) {
+                      return status >= 200 && status <= 301
+                    }
+                    return axios.post('/platform/events', data, { 
+                      maxRedirects: 0,
+                      validateStatus
+                    })
+                  })
+                  .then(({ status }) => console.log(`> ${status} - ${resource} - ${resourceId} - ${storeId}`))
+                  .catch(error => {
+                    if (error.response && error.config) {
+                      const err = new Error(`#${storeId} ${resourceId} POST to ${url} failed`)
+                      const { status, data } = error.response
+                      err.response = {
+                        status,
+                        data: JSON.stringify(data)
+                      }
+                      err.data = JSON.stringify(error.config.data)
+                      return console.error(err)
+                    }
+                    console.error(error)
+                  })
+                  .finally(() => {
+                    if (!res.headersSent) {
+                      return res.sendStatus(200)
+                    }
+                  })
               })
           }
         }
