@@ -190,17 +190,6 @@ procedures.push({
       action: 'create',
     },
 
-    // Receive notifications when order financial/fulfillment status are set or changed:
-    // Obs.: you probably SHOULD NOT enable the orders triggers below and the one above (create) together.
-    {
-      resource: 'orders',
-      field: 'financial_status',
-    },
-    {
-      resource: 'orders',
-      field: 'fulfillment_status',
-    },
-
     // Receive notifications when cart is edited:
     {
       resource: 'carts',
