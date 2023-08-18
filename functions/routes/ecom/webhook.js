@@ -40,11 +40,7 @@ exports.post = ({ appSdk }, req, res) => {
         })
       }
 
-      console.log('Before instance')
-
       const rdAxios = new RdAxios(client_id, client_secret, code, storeId)
-
-      console.log('After instance', rdAxios)
 
       /* DO YOUR CUSTOM STUFF HERE */
       const { resource } = trigger
@@ -61,7 +57,7 @@ exports.post = ({ appSdk }, req, res) => {
                 if (resource === 'carts') {
                   const cart = body
                   if (cart.available && !cart.completed) {
-                    const abandonedCartDelay = 12 * 1000 * 60
+                    const abandonedCartDelay = 2 * 1000 * 60
                     if (Date.now() - new Date(cart.created_at).getTime() >= abandonedCartDelay) {
                       const { customers } = cart
                       if (customers && customers[0]) {
@@ -154,7 +150,9 @@ exports.post = ({ appSdk }, req, res) => {
                       validateStatus
                     })
                   })
-                  .then(({ status }) => console.log(`> ${status} - ${resource} - ${resourceId} - ${storeId}`))
+                  .then(({ status }) => {
+                    console.log(`> ${status} - Created ${resource} - ${resourceId} - ${storeId}`)
+                  })
                   .catch(error => {
                     if (error.response && error.config) {
                       const err = new Error(`#${storeId} ${resourceId} POST to ${url} failed`)
