@@ -79,7 +79,7 @@ exports.post = ({ appSdk }, req, res) => {
                   }
                 }
                 console.log(`> Sending ${resource} notification`)
-                let data
+                let data, items
                 if (resource === 'orders') {
                   const financial = body && body.financial_status.current
                   
@@ -95,6 +95,7 @@ exports.post = ({ appSdk }, req, res) => {
                   const paymentMethod = getMethod(transaction)
                   const total = body.amount && body.amount.total
                   const acceptedMarketing = body.accepts_marketing ? 'granted' : 'declined'
+                  items = body.items
                   data = {
                     "event_type": "ORDER_PLACED",
                     "event_family":"CDP",
@@ -102,7 +103,7 @@ exports.post = ({ appSdk }, req, res) => {
                       "name": customer.display_name,
                       "email": customer.main_email,
                       "cf_order_id": body._id,
-                      "cf_order_total_items": totalItems,
+                      "cf_order_total_items": items && items.length || 0,
                       "cf_order_status": financial,
                       "cf_order_payment_method": paymentMethod,
                       "cf_order_payment_amount": total,
@@ -116,7 +117,7 @@ exports.post = ({ appSdk }, req, res) => {
                     }
                   }
                 } else if (resource === 'carts') {
-                  const totalItems = body.items.length
+                  items = body.items
                   const acceptedMarketing = body.accepts_marketing ? 'granted' : 'declined'
                   data = {
                     "event_type": "CART_ABANDONED",
@@ -125,7 +126,7 @@ exports.post = ({ appSdk }, req, res) => {
                       "name": customer.display_name,
                       "email": customer.main_email,
                       "cf_cart_id": body._id,
-                      "cf_cart_total_items": totalItems,
+                      "cf_cart_total_items": items && items.length || 0,
                       "cf_cart_status": "in_progress",
                       "legal_bases": [
                         {
@@ -152,6 +153,22 @@ exports.post = ({ appSdk }, req, res) => {
                   })
                   .then(({ status }) => {
                     console.log(`> ${status} - Created ${resource} - ${resourceId} - ${storeId}`)
+                    const resourceSub = resource.replace('s', '')
+                    const addProp = [`cf_${resourceSub}_product_id`, `CF_${resourceSub.toUpperCase()}_PRODUCT_SKU`]
+                    const removeProp = [`cf_${resourceSub}_total_items`, `cf_${resourceSub}_status`, `cf_${resourceSub}_payment_method`, `cf_${resourceSub}_payment_amount`] 
+                    const promises = []
+                    if (items && items.length && data) {
+                      removeProp.forEach(prop => delete data[prop])
+                      items.forEach(item => {
+                        data[addProp[0]] = item.product_id
+                        data[addProp[1]] = item.sku
+                        promises.push(axios.post('/platform/events', data, { 
+                          maxRedirects: 0,
+                          validateStatus
+                        }))
+                      });
+                      Promise.all(promises).then(({status}) => console.log(`>> ${status} - Create items ${resource} - ${storeId}`))
+                    }
                   })
                   .catch(error => {
                     if (error.response && error.config) {
