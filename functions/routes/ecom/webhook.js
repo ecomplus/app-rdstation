@@ -56,7 +56,7 @@ exports.post = ({ appSdk }, req, res) => {
                 console.log('Getted resource', resource, body._id)
                 if (resource === 'carts') {
                   const cart = body
-                  if (cart.available) {
+                  if (cart.available && !cart.completed) {
                     const { customers } = cart
                     if (customers && customers[0]) {
                       const { response } = await appSdk.apiRequest(storeId, `customers/${customers[0]}.json`)
