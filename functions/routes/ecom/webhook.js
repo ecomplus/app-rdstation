@@ -11,6 +11,10 @@ exports.post = ({ appSdk }, req, res) => {
   // receiving notification from Store API
   const { storeId } = req
 
+  const validateStatus = function (status) {
+    return status >= 200 && status <= 301
+  }
+
   /**
    * Treat E-Com Plus trigger body here
    * Ref.: https://developers.e-com.plus/docs/api/#/store/triggers/
@@ -31,8 +35,6 @@ exports.post = ({ appSdk }, req, res) => {
       }
       const { client_id, client_secret, code } = appData
 
-      console.log('Get app data:', client_id, client_secret, code)
-
       if (!client_id && !client_secret) {
         return res.status(409).send({
           error: 'NO_RD_KEYS',
@@ -44,16 +46,14 @@ exports.post = ({ appSdk }, req, res) => {
 
       /* DO YOUR CUSTOM STUFF HERE */
       const { resource } = trigger
-      console.log('o recurso é:', resource)
       if ((resource === 'orders' || resource === 'carts' || resource === 'customers') && trigger.action !== 'delete') {
         const resourceId = trigger.resource_id || trigger.inserted_id
         if (resourceId) {
-          console.log(`Trigger for Store #${storeId} ${resourceId}`)
+          console.log(`Trigger for Store #${storeId} ${resource} ${resourceId}`)
           appSdk.apiRequest(storeId, `${resource}/${resourceId}.json`)
             .then(async ({ response }) => {
                 let customer
                 const body = response.data
-                console.log('Getted resource', resource, body._id)
                 if (resource === 'carts') {
                   const cart = body
                   if (cart.available && !cart.completed) {
@@ -61,7 +61,6 @@ exports.post = ({ appSdk }, req, res) => {
                     if (customers && customers[0]) {
                       const { response } = await appSdk.apiRequest(storeId, `customers/${customers[0]}.json`)
                       customer = response.data
-                      console.log('get customer', customer._id)
                     }
                   } else {
                     return res.sendStatus(204)
@@ -151,9 +150,7 @@ exports.post = ({ appSdk }, req, res) => {
                     const { axios } = rdAxios
                     console.log('> Send resource', JSON.stringify(data), ' <<')
                     // https://axios-http.com/ptbr/docs/req_config
-                    const validateStatus = function (status) {
-                      return status >= 200 && status <= 301
-                    }
+                    
                     const url = resource !== 'customers' ? '/platform/events' : '/platform/contacts'
                     return axios.post(url, data, { 
                       maxRedirects: 0,
@@ -165,9 +162,6 @@ exports.post = ({ appSdk }, req, res) => {
                     rdAxios.preparing
                       .then(() => {
                         const { axios } = rdAxios
-                        const validateStatus = function (status) {
-                          return status >= 200 && status <= 301
-                        }
                         const resourceSub = resource.replace('s', '')
                         const addProp = [`cf_${resourceSub}_product_id`, `CF_${resourceSub.toUpperCase()}_PRODUCT_SKU`]
                         const removeProp = [`cf_${resourceSub}_total_items`, `cf_${resourceSub}_status`, `cf_${resourceSub}_payment_method`, `cf_${resourceSub}_payment_amount`] 
@@ -182,7 +176,7 @@ exports.post = ({ appSdk }, req, res) => {
                               validateStatus
                             }))
                           });
-                          Promise.all(promises).then((response) => console.log(`>> Create items ${resource} - ${storeId}`, response))
+                          Promise.all(promises).then(({ status }) => console.log(`>> ${status} Create items ${resource} - ${storeId}`))
                         }
                       })
                   })
