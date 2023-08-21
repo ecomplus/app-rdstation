@@ -48,10 +48,9 @@ exports.post = ({ appSdk }, req, res) => {
       if ((resource === 'orders' || resource === 'carts') && trigger.action !== 'delete') {
         const resourceId = trigger.resource_id || trigger.inserted_id
         if (resourceId) {
-          console.log(`Trigger for Store #${storeId} ${resourceId} => ${url}`)
-          if (url) {
-            appSdk.apiRequest(storeId, `${resource}/${resourceId}.json`)
-              .then(async ({ response }) => {
+          console.log(`Trigger for Store #${storeId} ${resourceId}`)
+          appSdk.apiRequest(storeId, `${resource}/${resourceId}.json`)
+            .then(async ({ response }) => {
                 let customer
                 const body = response.data
                 if (resource === 'carts') {
@@ -172,7 +171,7 @@ exports.post = ({ appSdk }, req, res) => {
                   })
                   .catch(error => {
                     if (error.response && error.config) {
-                      const err = new Error(`#${storeId} ${resourceId} POST to ${url} failed`)
+                      const err = new Error(`#${storeId} ${resourceId} POST failed`)
                       const { status, data } = error.response
                       err.response = {
                         status,
@@ -188,8 +187,7 @@ exports.post = ({ appSdk }, req, res) => {
                       return res.sendStatus(200)
                     }
                   })
-              })
-          }
+          })
         }
       }
     
