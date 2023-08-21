@@ -187,13 +187,13 @@ procedures.push({
     // Receive notifications when new order is created:
     {
       resource: 'orders',
-      action: 'create',
+      field: 'financial_status',
     },
 
     // Receive notifications when cart is edited:
     {
       resource: 'carts',
-      action: 'create',
+      field: 'customers',
     },
 
     // Receive notifications when customer is deleted:

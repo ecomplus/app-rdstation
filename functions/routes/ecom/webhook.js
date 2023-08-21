@@ -45,7 +45,7 @@ exports.post = ({ appSdk }, req, res) => {
       /* DO YOUR CUSTOM STUFF HERE */
       const { resource } = trigger
       console.log('o recurso é:', resource)
-      if ((resource === 'orders' || resource === 'carts') && trigger.action !== 'delete') {
+      if ((resource === 'orders' || resource === 'carts' || resource === 'customers') && trigger.action !== 'delete') {
         const resourceId = trigger.resource_id || trigger.inserted_id
         if (resourceId) {
           console.log(`Trigger for Store #${storeId} ${resourceId}`)
@@ -53,24 +53,20 @@ exports.post = ({ appSdk }, req, res) => {
             .then(async ({ response }) => {
                 let customer
                 const body = response.data
+                console.log('Getted resource', resource, body._id)
                 if (resource === 'carts') {
                   const cart = body
-                  if (cart.available && !cart.completed) {
-                    const abandonedCartDelay = 2 * 1000 * 60
-                    if (Date.now() - new Date(cart.created_at).getTime() >= abandonedCartDelay) {
-                      const { customers } = cart
-                      if (customers && customers[0]) {
-                        const { response } = await appSdk.apiRequest(storeId, `customers/${customers[0]}.json`)
-                        customer = response.data
-                      }
-                    } else {
-                      return res.sendStatus(501)
+                  if (cart.available) {
+                    const { customers } = cart
+                    if (customers && customers[0]) {
+                      const { response } = await appSdk.apiRequest(storeId, `customers/${customers[0]}.json`)
+                      customer = response.data
+                      console.log('get customer', customer._id)
                     }
                   } else {
                     return res.sendStatus(204)
                   }
-                }
-                if (resource === 'orders') {
+                } else if (resource === 'orders') {
                   const { buyers } = body
                   if (buyers && buyers[0]) {
                     const { response } = await appSdk.apiRequest(storeId, `customers/${buyers[0]}.json`)
@@ -93,7 +89,6 @@ exports.post = ({ appSdk }, req, res) => {
                   }
                   const paymentMethod = getMethod(transaction)
                   const total = body.amount && body.amount.total
-                  const acceptedMarketing = body.accepts_marketing ? 'granted' : 'declined'
                   items = body.items
                   data = {
                     "event_type": "ORDER_PLACED",
@@ -110,14 +105,13 @@ exports.post = ({ appSdk }, req, res) => {
                         {
                           "category": "communications",
                           "type":"consent",
-                          "status": acceptedMarketing
+                          "status": body.accepts_marketing !== false ? 'granted' : 'declined'
                         }
                       ]
                     }
                   }
                 } else if (resource === 'carts') {
                   items = body.items
-                  const acceptedMarketing = body.accepts_marketing ? 'granted' : 'declined'
                   data = {
                     "event_type": "CART_ABANDONED",
                     "event_family":"CDP",
@@ -131,10 +125,25 @@ exports.post = ({ appSdk }, req, res) => {
                         {
                           "category": "communications",
                           "type": "consent",
-                          "status": acceptedMarketing
+                          "status": body.accepts_marketing !== false ? 'granted' : 'declined'
                         }
                       ]
                     }
+                  }
+                } else if (resource === 'customers') {
+                  const cellphone = body.phones && body.phones.length && body.phones[0] && body.phones[0].number
+                  const phoneWithLocale = cellphone && cellphone.length ? `+55${cellphone}` : undefined
+                  data = {
+                    name: body.display_name || body.name && body.name.given_name,
+                    email: body.main_email,
+                    mobile_phone: phoneWithLocale,
+                    legal_bases: [
+                      {
+                        category: "communications",
+                        type:"consent",
+                        status: body.accepts_marketing !== false ? 'granted' : 'declined'
+                      }
+                    ]
                   }
                 }
                 rdAxios.preparing
@@ -145,7 +154,8 @@ exports.post = ({ appSdk }, req, res) => {
                     const validateStatus = function (status) {
                       return status >= 200 && status <= 301
                     }
-                    return axios.post('/platform/events', data, { 
+                    const url = resource !== 'customers' ? '/platform/events' : '/platform/contacts'
+                    return axios.post(url, data, { 
                       maxRedirects: 0,
                       validateStatus
                     })
@@ -161,10 +171,14 @@ exports.post = ({ appSdk }, req, res) => {
                       items.forEach(item => {
                         data[addProp[0]] = item.product_id
                         data[addProp[1]] = item.sku
-                        promises.push(axios.post('/platform/events', data, { 
-                          maxRedirects: 0,
-                          validateStatus
-                        }))
+                        rdAxios.preparing
+                          .then(() => {
+                            const { axios } = rdAxios
+                            promises.push(axios.post('/platform/events', data, { 
+                              maxRedirects: 0,
+                              validateStatus
+                            }))
+                          })
                       });
                       Promise.all(promises).then(({status}) => console.log(`>> ${status} - Create items ${resource} - ${storeId}`))
                     }
