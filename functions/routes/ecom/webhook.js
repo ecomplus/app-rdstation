@@ -162,26 +162,29 @@ exports.post = ({ appSdk }, req, res) => {
                   })
                   .then(({ status }) => {
                     console.log(`> ${status} - Created ${resource} - ${resourceId} - ${storeId}`)
-                    const resourceSub = resource.replace('s', '')
-                    const addProp = [`cf_${resourceSub}_product_id`, `CF_${resourceSub.toUpperCase()}_PRODUCT_SKU`]
-                    const removeProp = [`cf_${resourceSub}_total_items`, `cf_${resourceSub}_status`, `cf_${resourceSub}_payment_method`, `cf_${resourceSub}_payment_amount`] 
-                    const promises = []
-                    if (items && items.length && data) {
-                      removeProp.forEach(prop => delete data[prop])
-                      items.forEach(item => {
-                        data[addProp[0]] = item.product_id
-                        data[addProp[1]] = item.sku
-                        rdAxios.preparing
-                          .then(() => {
-                            const { axios } = rdAxios
+                    rdAxios.preparing
+                      .then(() => {
+                        const { axios } = rdAxios
+                        const validateStatus = function (status) {
+                          return status >= 200 && status <= 301
+                        }
+                        const resourceSub = resource.replace('s', '')
+                        const addProp = [`cf_${resourceSub}_product_id`, `CF_${resourceSub.toUpperCase()}_PRODUCT_SKU`]
+                        const removeProp = [`cf_${resourceSub}_total_items`, `cf_${resourceSub}_status`, `cf_${resourceSub}_payment_method`, `cf_${resourceSub}_payment_amount`] 
+                        const promises = []
+                        if (items && items.length && data) {
+                          removeProp.forEach(prop => delete data[prop])
+                          items.forEach(item => {
+                            data[addProp[0]] = item.product_id
+                            data[addProp[1]] = item.sku
                             promises.push(axios.post('/platform/events', data, { 
                               maxRedirects: 0,
                               validateStatus
                             }))
-                          })
-                      });
-                      Promise.all(promises).then(({status}) => console.log(`>> ${status} - Create items ${resource} - ${storeId}`))
-                    }
+                          });
+                          Promise.all(promises).then((response) => console.log(`>> Create items ${resource} - ${storeId}`, response))
+                        }
+                      })
                   })
                   .catch(error => {
                     if (error.response && error.config) {
