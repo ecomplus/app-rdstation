@@ -11,16 +11,14 @@ exports.post = ({ appSdk, admin }, req, res) => {
     return appSdk.getAuth(storeId)
       .then(async (auth) => {
         try {
-          updateAppData({ appSdk, storeId, auth }, {
-            code
-          })
+          // waiting for app approval at rd station
         } catch (error) {
           console.error(error)
           const { response, config } = error
           let status
           if (response) {
             status = response.status
-            const err = new Error(`#${storeId} Pagalve Webhook error ${status}`)
+            const err = new Error(`#${storeId} RD Webhook error ${status}`)
             err.url = config && config.url
             err.status = status
             err.response = JSON.stringify(response.data)
@@ -29,7 +27,7 @@ exports.post = ({ appSdk, admin }, req, res) => {
           if (!res.headersSent) {
             res.send({
               status: status || 500,
-              msg: `#${storeId} Pagaleve Webhook error`
+              msg: `#${storeId} RD Webhook error`
             })
           }
         }
@@ -55,7 +53,45 @@ exports.get = ({ appSdk, admin }, req, res) => {
   let { storeId, code } = query
   storeId = parseInt(storeId, 10)
   console.log('>> Store: ', storeId, ' code: ', code, ' <<')
-  if (storeId > 100) {
-    res.status(200).redirect('https://app.e-com.plus/#/apps/edit/111968/')
+  if (storeId > 100 && code) {
+    return appSdk.getAuth(storeId)
+      .then(async (auth) => {
+        try {
+          await updateAppData({ appSdk, storeId, auth }, {
+            code
+          })
+          res.status(200).redirect('https://app.e-com.plus/#/apps/edit/111968/')
+        } catch (error) {
+          console.error(error)
+          const { response, config } = error
+          let status
+          if (response) {
+            status = response.status
+            const err = new Error(`#${storeId} RD Webhook error ${status}`)
+            err.url = config && config.url
+            err.status = status
+            err.response = JSON.stringify(response.data)
+            console.error(err)
+          }
+          if (!res.headersSent) {
+            res.send({
+              status: status || 500,
+              msg: `#${storeId} RD Webhook error`
+            })
+          }
+        }
+      })
+      .catch(() => {
+        console.log('Unauthorized')
+        if (!res.headersSent) {
+          res.sendStatus(401)
+        }
+      })
+    res.status(200)
+  } else {
+    return res.send({
+      status: 404,
+      msg: `StoreId #${storeId} not found`
+    })
   }
 }
