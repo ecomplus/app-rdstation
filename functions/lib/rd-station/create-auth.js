@@ -3,7 +3,7 @@ module.exports = (client_id, client_secret, code, storeId, refresh_token) => new
   const axios = require('./create-axios')(null)
   const request = isRetry => {
     const path = refresh_token ? '/auth/token' : `/auth/token?code=${code}`
-    console.log(`>> Create Auth path:${storeId}: ${path}`)
+    console.log(`>> Create Auth path:${storeId}: ${path} - ${refresh_token}`)
     axios.post(path, {
       client_id,
       client_secret,
