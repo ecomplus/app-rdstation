@@ -171,6 +171,7 @@ exports.post = ({ appSdk }, req, res) => {
                           items.forEach(item => {
                             data[addProp[0]] = item.product_id
                             data[addProp[1]] = item.sku
+                            console.log('Check data before export', JSON.stringify(data))
                             promises.push(axios.post('/platform/events', data, { 
                               maxRedirects: 0,
                               validateStatus
