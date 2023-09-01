@@ -67,8 +67,8 @@ exports.post = ({ appSdk }, req, res) => {
                   }
                 } else if (resource === 'orders') {
                   const { buyers } = body
-                  if (buyers && buyers[0]) {
-                    const { response } = await appSdk.apiRequest(storeId, `customers/${buyers[0]}.json`)
+                  if (buyers && buyers.length && buyers[0]) {
+                    const { response } = await appSdk.apiRequest(storeId, `customers/${buyers[0]._id}.json`)
                     customer = response.data
                   }
                 }
@@ -159,27 +159,31 @@ exports.post = ({ appSdk }, req, res) => {
                   })
                   .then(({ status }) => {
                     console.log(`> ${status} - Created ${resource} - ${resourceId} - ${storeId}`)
-                    rdAxios.preparing
-                      .then(() => {
-                        const { axios } = rdAxios
-                        const resourceSub = resource.replace('s', '')
-                        const addProp = [`cf_${resourceSub}_product_id`, `CF_${resourceSub.toUpperCase()}_PRODUCT_SKU`]
-                        const removeProp = [`cf_${resourceSub}_total_items`, `cf_${resourceSub}_status`, `cf_${resourceSub}_payment_method`, `cf_${resourceSub}_payment_amount`] 
-                        const promises = []
-                        if (items && items.length && data) {
-                          removeProp.forEach(prop => delete data[prop])
-                          items.forEach(item => {
-                            data[addProp[0]] = item.product_id
-                            data[addProp[1]] = item.sku
-                            console.log('Check data before export', JSON.stringify(data))
-                            promises.push(axios.post('/platform/events', data, { 
-                              maxRedirects: 0,
-                              validateStatus
-                            }))
-                          });
-                          Promise.all(promises).then(({ status }) => console.log(`>> ${status} Create items ${resource} - ${storeId}`))
-                        }
-                      })
+                    if (resource === 'orders' || resource === 'carts') {
+                      rdAxios.preparing
+                        .then(() => {
+                          const { axios } = rdAxios
+                          const resourceSub = resource.replace('s', '')
+                          const addProp = [`cf_${resourceSub}_product_id`, `CF_${resourceSub.toUpperCase()}_PRODUCT_SKU`]
+                          const removeProp = [`cf_${resourceSub}_total_items`, `cf_${resourceSub}_status`, `cf_${resourceSub}_payment_method`, `cf_${resourceSub}_payment_amount`] 
+                          const promises = []
+                          const isOrder = resource === 'orders'
+                          if (items && items.length && data) {
+                            removeProp.forEach(prop => delete data['payload'][prop])
+                            items.forEach(item => {
+                              data['payload'][addProp[0]] = item.product_id
+                              data['payload'][addProp[1]] = item.sku
+                              data['event_type'] = isOrder ? 'ORDER_PLACED_ITEM' : 'CART_ABANDONED_ITEM'
+                              console.log('Check data before export', JSON.stringify(data))
+                              promises.push(axios.post('/platform/events', data, { 
+                                maxRedirects: 0,
+                                validateStatus
+                              }))
+                            });
+                            Promise.all(promises).then((response) => console.log(`>> Created items ${resource} - ${storeId}`, response))
+                          }
+                        })
+                    }
                   })
                   .catch(error => {
                     if (error.response && error.config) {
