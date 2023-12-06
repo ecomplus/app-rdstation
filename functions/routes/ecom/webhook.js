@@ -132,10 +132,17 @@ exports.post = ({ appSdk }, req, res) => {
                 } else if (resource === 'customers') {
                   const cellphone = body.phones && body.phones.length && body.phones[0] && body.phones[0].number
                   const phoneWithLocale = cellphone && cellphone.length ? `+55${cellphone}` : undefined
+                  const birthDate = body.birth_date && body.birth_date.day && body.birth_date.month && body.birth_date.year ? `${body.birth_date.year}/${body.birth_date.month.padStart(2, '0')}/${body.birth_date.day.padStart(2, '0')}` : undefined
+                  const address = body.addresses && body.addresses.length && body.addresses[0]
+                  const city = address ? address.city : undefined
+                  const state = address ? address.province_code : undefined
                   data = {
                     name: body.display_name || body.name && body.name.given_name,
                     email: body.main_email,
                     mobile_phone: phoneWithLocale,
+                    birthdate: birthDate,
+                    city,
+                    state,
                     legal_bases: [
                       {
                         category: "communications",
