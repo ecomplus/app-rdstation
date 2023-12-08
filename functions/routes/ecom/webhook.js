@@ -75,40 +75,39 @@ exports.post = ({ appSdk }, req, res) => {
                 console.log(`> Sending ${resource} notification`)
                 let data, items
                 if (resource === 'orders') {
-                  const financial = body && body.financial_status.current
-                  
-                  const transaction = body.transactions[0]
-                  const getMethod = transaction => {
-                    const paymentMethod = transaction.payment_method && transaction.payment_method.code
-                    if (paymentMethod === 'credit_card') {
-                      return 'Credit Card'
-                    } else {
-                      return 'Others'
+                  const financial = body && body.financial_status.current             
+                    const transaction = body.transactions[0]
+                    const getMethod = transaction => {
+                      const paymentMethod = transaction.payment_method && transaction.payment_method.code
+                      if (paymentMethod === 'credit_card') {
+                        return 'Credit Card'
+                      } else {
+                        return 'Others'
+                      }
                     }
-                  }
-                  const paymentMethod = getMethod(transaction)
-                  const total = body.amount && body.amount.total
-                  items = body.items
-                  data = {
-                    "event_type": "ORDER_PLACED",
-                    "event_family":"CDP",
-                    "payload": {
-                      "name": customer.display_name,
-                      "email": customer.main_email,
-                      "cf_order_id": body._id,
-                      "cf_order_total_items": items && items.length || 0,
-                      "cf_order_status": financial,
-                      "cf_order_payment_method": paymentMethod,
-                      "cf_order_payment_amount": total,
-                      "legal_bases": [
-                        {
-                          "category": "communications",
-                          "type":"consent",
-                          "status": body.accepts_marketing !== false ? 'granted' : 'declined'
-                        }
-                      ]
+                    const paymentMethod = getMethod(transaction)
+                    const total = body.amount && body.amount.total
+                    items = body.items
+                    data = {
+                      "event_type": "ORDER_PLACED",
+                      "event_family":"CDP",
+                      "payload": {
+                        "name": customer.display_name,
+                        "email": customer.main_email,
+                        "cf_order_id": body._id,
+                        "cf_order_total_items": items && items.length || 0,
+                        "cf_order_status": financial,
+                        "cf_order_payment_method": paymentMethod,
+                        "cf_order_payment_amount": total,
+                        "legal_bases": [
+                          {
+                            "category": "communications",
+                            "type":"consent",
+                            "status": body.accepts_marketing !== false ? 'granted' : 'declined'
+                          }
+                        ]
+                      }
                     }
-                  }
                 } else if (resource === 'carts') {
                   items = body.items
                   data = {
@@ -158,7 +157,7 @@ exports.post = ({ appSdk }, req, res) => {
                     console.log('> Send resource', JSON.stringify(data), ' <<')
                     // https://axios-http.com/ptbr/docs/req_config
                     
-                    const url = resource !== 'customers' ? '/platform/events' : '/platform/contacts'
+                    let url = resource !== 'customers' ? '/platform/events' : '/platform/contacts'
                     return axios.post(url, data, { 
                       maxRedirects: 0,
                       validateStatus
@@ -170,24 +169,41 @@ exports.post = ({ appSdk }, req, res) => {
                       rdAxios.preparing
                         .then(() => {
                           const { axios } = rdAxios
-                          const resourceSub = resource.replace('s', '')
-                          const addProp = [`cf_${resourceSub}_product_id`, `CF_${resourceSub.toUpperCase()}_PRODUCT_SKU`]
-                          const removeProp = [`cf_${resourceSub}_total_items`, `cf_${resourceSub}_status`, `cf_${resourceSub}_payment_method`, `cf_${resourceSub}_payment_amount`] 
-                          const promises = []
-                          const isOrder = resource === 'orders'
-                          if (items && items.length && data) {
-                            removeProp.forEach(prop => delete data['payload'][prop])
-                            items.forEach(item => {
-                              data['payload'][addProp[0]] = item.product_id
-                              data['payload'][addProp[1]] = item.sku
-                              data['event_type'] = isOrder ? 'ORDER_PLACED_ITEM' : 'CART_ABANDONED_ITEM'
-                              console.log('Check data before export', JSON.stringify(data))
-                              promises.push(axios.post('/platform/events', data, { 
-                                maxRedirects: 0,
-                                validateStatus
-                              }))
-                            });
-                            Promise.all(promises).then((response) => console.log(`>> Created items ${resource} - ${storeId}`, response))
+                          if (body && body.financial_status && body.financial_status.current === 'paid') {
+                            console.log('send sale type')
+                            data = {
+                              "event_type": "SALE",
+                              "event_family": "CDP",
+                              "payload": {
+                                "email": body.main_email,
+                                "funnel_name": "default",
+                                "value": body.amount && body.amount.total
+                              }
+                            }
+                            axios.post('/platform/events?event_type=sale', data, { 
+                              maxRedirects: 0,
+                              validateStatus
+                            })
+                          } else {
+                            const resourceSub = resource.replace('s', '')
+                            const addProp = [`cf_${resourceSub}_product_id`, `CF_${resourceSub.toUpperCase()}_PRODUCT_SKU`]
+                            const removeProp = [`cf_${resourceSub}_total_items`, `cf_${resourceSub}_status`, `cf_${resourceSub}_payment_method`, `cf_${resourceSub}_payment_amount`] 
+                            const promises = []
+                            const isOrder = resource === 'orders'
+                            if (items && items.length && data) {
+                              removeProp.forEach(prop => delete data['payload'][prop])
+                              items.forEach(item => {
+                                data['payload'][addProp[0]] = item.product_id
+                                data['payload'][addProp[1]] = item.sku
+                                data['event_type'] = isOrder ? 'ORDER_PLACED_ITEM' : 'CART_ABANDONED_ITEM'
+                                console.log('Check data before export', JSON.stringify(data))
+                                promises.push(axios.post('/platform/events', data, { 
+                                  maxRedirects: 0,
+                                  validateStatus
+                                }))
+                              });
+                              Promise.all(promises).then((response) => console.log(`>> Created items ${resource} - ${storeId}`, response))
+                            }
                           }
                         })
                     }
