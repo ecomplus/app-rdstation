@@ -180,6 +180,7 @@ exports.post = ({ appSdk }, req, res) => {
                                 "value": body.amount && body.amount.total
                               }
                             }
+                            console.log('sale data', JSON.stringify(data))
                             axios.post('/platform/events?event_type=sale', data, { 
                               maxRedirects: 0,
                               validateStatus
@@ -196,7 +197,6 @@ exports.post = ({ appSdk }, req, res) => {
                                 data['payload'][addProp[0]] = item.product_id
                                 data['payload'][addProp[1]] = item.sku
                                 data['event_type'] = isOrder ? 'ORDER_PLACED_ITEM' : 'CART_ABANDONED_ITEM'
-                                console.log('Check data before export', JSON.stringify(data))
                                 promises.push(axios.post('/platform/events', data, { 
                                   maxRedirects: 0,
                                   validateStatus
