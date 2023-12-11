@@ -175,7 +175,7 @@ exports.post = ({ appSdk }, req, res) => {
                               "event_type": "SALE",
                               "event_family": "CDP",
                               "payload": {
-                                "email": body.main_email,
+                                "email": customer.main_email,
                                 "funnel_name": "default",
                                 "value": body.amount && body.amount.total
                               }
