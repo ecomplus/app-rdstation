@@ -94,7 +94,7 @@ exports.post = ({ appSdk }, req, res) => {
                       "payload": {
                         "name": customer.display_name,
                         "email": customer.main_email,
-                        "cf_order_id": body._id,
+                        "cf_order_id": body.status_link || body._id,
                         "cf_order_total_items": items && items.length || 0,
                         "cf_order_status": financial,
                         "cf_order_payment_method": paymentMethod,
@@ -116,7 +116,7 @@ exports.post = ({ appSdk }, req, res) => {
                     "payload": {
                       "name": customer.display_name,
                       "email": customer.main_email,
-                      "cf_cart_id": body._id,
+                      "cf_cart_id": body.permalink || body._id,
                       "cf_cart_total_items": items && items.length || 0,
                       "cf_cart_status": "in_progress",
                       "legal_bases": [
@@ -170,7 +170,6 @@ exports.post = ({ appSdk }, req, res) => {
                         .then(() => {
                           const { axios } = rdAxios
                           if (body && body.financial_status && body.financial_status.current === 'paid') {
-                            console.log('send sale type')
                             data = {
                               "event_type": "SALE",
                               "event_family": "CDP",
@@ -180,7 +179,6 @@ exports.post = ({ appSdk }, req, res) => {
                                 "value": body.amount && body.amount.total
                               }
                             }
-                            console.log('sale data', JSON.stringify(data))
                             axios.post('/platform/events?event_type=sale', data, { 
                               maxRedirects: 0,
                               validateStatus
