@@ -15,6 +15,13 @@ exports.post = ({ appSdk }, req, res) => {
     return status >= 200 && status <= 301
   }
 
+  const sendItem = (axios, validateStatus, data) => new Promise(resolve => {
+    return axios.post('/platform/events', data, { 
+      maxRedirects: 0,
+      validateStatus
+    }).then(e => resolve(e))
+  })
+
   /**
    * Treat E-Com Plus trigger body here
    * Ref.: https://developers.e-com.plus/docs/api/#/store/triggers/
@@ -179,11 +186,13 @@ exports.post = ({ appSdk }, req, res) => {
                                 "value": body.amount && body.amount.total
                               }
                             }
-                            axios.post('/platform/events?event_type=sale', data, { 
+                            console.log('sending sale', JSON.stringify(data))
+                            return axios.post('/platform/events?event_type=sale', data, { 
                               maxRedirects: 0,
                               validateStatus
                             })
                           } else {
+                            console.log('entrando no envio de itens')
                             const resourceSub = resource.replace('s', '')
                             const addProp = [`cf_${resourceSub}_product_id`, `CF_${resourceSub.toUpperCase()}_PRODUCT_SKU`]
                             const removeProp = [`cf_${resourceSub}_total_items`, `cf_${resourceSub}_status`, `cf_${resourceSub}_payment_method`, `cf_${resourceSub}_payment_amount`] 
@@ -195,12 +204,11 @@ exports.post = ({ appSdk }, req, res) => {
                                 data['payload'][addProp[0]] = item.product_id
                                 data['payload'][addProp[1]] = item.sku
                                 data['event_type'] = isOrder ? 'ORDER_PLACED_ITEM' : 'CART_ABANDONED_ITEM'
-                                promises.push(axios.post('/platform/events', data, { 
-                                  maxRedirects: 0,
-                                  validateStatus
-                                }))
+                                console.log('data item', JSON.stringify(data))
+                                promises.push(sendItem(axios, validateStatus, data))
                               });
-                              Promise.all(promises).then((response) => console.log(`>> Created items ${resource} - ${storeId}`, response))
+                              console.log('promise:', promises)
+                              return Promise.all(promises).then((response) => console.log(`>> Created items ${resource} - ${storeId}`, response))
                             }
                           }
                         })
