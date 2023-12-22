@@ -19,7 +19,10 @@ exports.post = ({ appSdk }, req, res) => {
     return axios.post('/platform/events', data, { 
       maxRedirects: 0,
       validateStatus
-    }).then(e => resolve(e))
+    }).then(e => {
+      console.log('Item sended')
+      resolve(e)
+    })
   })
 
   /**
@@ -174,7 +177,7 @@ exports.post = ({ appSdk }, req, res) => {
                     console.log(`> ${status} - Created ${resource} - ${resourceId} - ${storeId}`)
                     if (resource === 'orders' || resource === 'carts') {
                       rdAxios.preparing
-                        .then(() => {
+                        .then(async () => {
                           const { axios } = rdAxios
                           if (body && body.financial_status && body.financial_status.current === 'paid') {
                             data = {
@@ -208,7 +211,7 @@ exports.post = ({ appSdk }, req, res) => {
                                 promises.push(sendItem(axios, validateStatus, data))
                               });
                               console.log('promise:', promises)
-                              return Promise.all(promises).then((response) => console.log(`>> Created items ${resource} - ${storeId}`, response))
+                              return await Promise.all(promises).then((response) => console.log(`>> Created items ${resource} - ${storeId}`, response))
                             }
                           }
                         })
