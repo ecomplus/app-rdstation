@@ -197,7 +197,7 @@ exports.post = ({ appSdk }, req, res) => {
                           } else {
                             console.log('entrando no envio de itens')
                             const resourceSub = resource.replace('s', '')
-                            const addProp = [`cf_${resourceSub}_product_id`, `CF_${resourceSub}_product_sku`]
+                            const addProp = [`cf_${resourceSub}_product_id`, `cf_${resourceSub}_product_sku`]
                             const removeProp = [`cf_${resourceSub}_total_items`, `cf_${resourceSub}_status`, `cf_${resourceSub}_payment_method`, `cf_${resourceSub}_payment_amount`] 
                             const promises = []
                             const isOrder = resource === 'orders'
