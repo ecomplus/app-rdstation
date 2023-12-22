@@ -164,7 +164,6 @@ exports.post = ({ appSdk }, req, res) => {
                 rdAxios.preparing
                   .then(() => {
                     const { axios } = rdAxios
-                    console.log('> Send resource', JSON.stringify(data), ' <<')
                     // https://axios-http.com/ptbr/docs/req_config
                     
                     let url = resource !== 'customers' ? '/platform/events' : '/platform/contacts'
@@ -189,13 +188,11 @@ exports.post = ({ appSdk }, req, res) => {
                                 "value": body.amount && body.amount.total
                               }
                             }
-                            console.log('sending sale', JSON.stringify(data))
                             return axios.post('/platform/events?event_type=sale', data, { 
                               maxRedirects: 0,
                               validateStatus
                             })
                           } else {
-                            console.log('entrando no envio de itens')
                             const resourceSub = resource.replace('s', '')
                             const addProp = [`cf_${resourceSub}_product_id`, `cf_${resourceSub}_product_sku`]
                             const removeProp = [`cf_${resourceSub}_total_items`, `cf_${resourceSub}_status`, `cf_${resourceSub}_payment_method`, `cf_${resourceSub}_payment_amount`] 
@@ -207,10 +204,9 @@ exports.post = ({ appSdk }, req, res) => {
                                 data['payload'][addProp[0]] = item.product_id
                                 data['payload'][addProp[1]] = item.sku
                                 data['event_type'] = isOrder ? 'ORDER_PLACED_ITEM' : 'CART_ABANDONED_ITEM'
-                                console.log('data item', JSON.stringify(data))
                                 promises.push(sendItem(axios, validateStatus, data))
                               });
-                              return await Promise.all(promises).then((response) => console.log(`>> Created items ${resource} - ${storeId}`, response)).catch(err => console.log('erro do promise all', err))
+                              return await Promise.all(promises).then((response) => console.log(`>> Created items ${resource} - ${storeId}`)).catch(err => console.log('erro do promise all', err))
                             }
                           }
                         })
