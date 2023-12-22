@@ -197,7 +197,7 @@ exports.post = ({ appSdk }, req, res) => {
                           } else {
                             console.log('entrando no envio de itens')
                             const resourceSub = resource.replace('s', '')
-                            const addProp = [`cf_${resourceSub}_product_id`, `CF_${resourceSub.toUpperCase()}_PRODUCT_SKU`]
+                            const addProp = [`cf_${resourceSub}_product_id`, `CF_${resourceSub}_product_sku`]
                             const removeProp = [`cf_${resourceSub}_total_items`, `cf_${resourceSub}_status`, `cf_${resourceSub}_payment_method`, `cf_${resourceSub}_payment_amount`] 
                             const promises = []
                             const isOrder = resource === 'orders'
@@ -210,7 +210,6 @@ exports.post = ({ appSdk }, req, res) => {
                                 console.log('data item', JSON.stringify(data))
                                 promises.push(sendItem(axios, validateStatus, data))
                               });
-                              console.log('promise:', promises)
                               return await Promise.all(promises).then((response) => console.log(`>> Created items ${resource} - ${storeId}`, response)).catch(err => console.log('erro do promise all', err))
                             }
                           }
