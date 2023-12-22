@@ -211,7 +211,7 @@ exports.post = ({ appSdk }, req, res) => {
                                 promises.push(sendItem(axios, validateStatus, data))
                               });
                               console.log('promise:', promises)
-                              return await Promise.all(promises).then((response) => console.log(`>> Created items ${resource} - ${storeId}`, response))
+                              return await Promise.all(promises).then((response) => console.log(`>> Created items ${resource} - ${storeId}`, response)).catch(err => console.log('erro do promise all', err))
                             }
                           }
                         })
